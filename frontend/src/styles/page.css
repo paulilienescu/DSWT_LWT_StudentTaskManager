@@ -1,0 +1,22 @@
+/* Full-page background without scrolling */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.page-bg {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: radial-gradient(
+      circle at 20% 10%,
+      rgba(120, 90, 255, 0.35),
+      transparent 40%
+    ),
+    radial-gradient(circle at 80% 30%, rgba(0, 190, 255, 0.25), transparent 45%),
+    linear-gradient(135deg, #120b2a, #0b1330);
+}

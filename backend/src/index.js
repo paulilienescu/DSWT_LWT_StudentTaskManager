@@ -39,11 +39,10 @@ const resolvers = {
       const newUser = {
         id: String(users.length + 1),
         username,
-        password, // (for now plain text - later we can hash)
+        password,
       };
       users.push(newUser);
 
-      // simple token for now
       return `token-${newUser.id}`;
     },
 
