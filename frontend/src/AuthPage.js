@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
+import ProjectsPage from "./ProjectsPage";
 
 import "./styles/page.css";
 import "./styles/AuthPage.css";
@@ -148,28 +149,7 @@ export default function AuthPage() {
   };
 
   if (token) {
-    return (
-      <div className="page-bg">
-        <div className="auth-card">
-          <h2 className="auth-title">You are logged in</h2>
-          <div className="auth-subtitle" style={{ marginBottom: 12 }}>
-            {meLoading
-              ? "Loading user..."
-              : meError
-              ? `Error: ${meError.message}`
-              : data?.me
-              ? `User: ${data.me.username} (id: ${data.me.id})`
-              : "No user returned (token invalid?)"}
-          </div>
-
-          <button className="auth-primaryBtn" onClick={logout}>
-            Logout
-          </button>
-
-          {msg ? <div className="auth-info">{msg}</div> : null}
-        </div>
-      </div>
-    );
+    return <ProjectsPage />;
   }
 
   const emailInputClass = `auth-input ${errors.email ? "error" : ""}`;
