@@ -1,5 +1,6 @@
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import "./styles/Board.css";
 
 const TASKS = gql`
   query Tasks($projectId: ID!, $status: TaskStatus) {
@@ -36,16 +37,31 @@ const DELETE_TASK = gql`
   }
 `;
 
-export default function TasksPage({ project, onBack }) {
+const STATUS_OPTIONS = [
+  { value: "TODO", label: "To do" },
+  { value: "IN_PROGRESS", label: "In progress" },
+  { value: "DONE", label: "Done" },
+];
+
+export default function TasksPage({ project }) {
   const [title, setTitle] = useState("");
 
   const { data, loading, error, refetch } = useQuery(TASKS, {
     variables: { projectId: project.id },
+    fetchPolicy: "cache-and-network",
   });
 
   const [createTask] = useMutation(CREATE_TASK);
   const [updateTaskStatus] = useMutation(UPDATE_TASK_STATUS);
   const [deleteTask] = useMutation(DELETE_TASK);
+
+  const tasks = data?.tasks ?? [];
+
+  const grouped = useMemo(() => {
+    const g = { TODO: [], IN_PROGRESS: [], DONE: [] };
+    for (const t of tasks) g[t.status]?.push(t);
+    return g;
+  }, [tasks]);
 
   const onCreate = async (e) => {
     e.preventDefault();
@@ -56,15 +72,8 @@ export default function TasksPage({ project, onBack }) {
     refetch();
   };
 
-  const cycleStatus = async (task) => {
-    const next =
-      task.status === "TODO"
-        ? "IN_PROGRESS"
-        : task.status === "IN_PROGRESS"
-        ? "DONE"
-        : "TODO";
-
-    await updateTaskStatus({ variables: { taskId: task.id, status: next } });
+  const onChangeStatus = async (taskId, status) => {
+    await updateTaskStatus({ variables: { taskId, status } });
     refetch();
   };
 
@@ -74,35 +83,79 @@ export default function TasksPage({ project, onBack }) {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "Arial" }}>
-      <button onClick={onBack}>← Back</button>
-      <h2 style={{ marginTop: 12 }}>Tasks — {project.name}</h2>
+    <div className="tasks-wrap">
+      <div className="tasks-header">
+        <div>
+          <h2 className="tasks-title">{project.name}</h2>
+          <p className="tasks-subtitle">Task board</p>
+        </div>
+      </div>
 
-      <form
-        onSubmit={onCreate}
-        style={{ display: "flex", gap: 8, marginBottom: 16 }}
-      >
+      <form className="tasks-form" onSubmit={onCreate}>
         <input
-          style={{ flex: 1 }}
+          className="input"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="New task title"
+          placeholder="Add a task..."
         />
-        <button type="submit">Add</button>
+        <button className="btn btn-primary" type="submit">
+          Add task
+        </button>
       </form>
 
-      {loading ? <p>Loading tasks...</p> : null}
-      {error ? <p style={{ color: "red" }}>{error.message}</p> : null}
+      {loading ? <p className="muted">Loading tasks...</p> : null}
+      {error ? <p className="errorText">{error.message}</p> : null}
 
-      <ul>
-        {(data?.tasks || []).map((t) => (
-          <li key={t.id} style={{ marginBottom: 10 }}>
-            <b>{t.title}</b> — {t.status}{" "}
-            <button onClick={() => cycleStatus(t)}>Change status</button>{" "}
-            <button onClick={() => onDelete(t.id)}>Delete</button>
-          </li>
+      <div className="columns">
+        {["TODO", "IN_PROGRESS", "DONE"].map((status) => (
+          <div className="col" key={status}>
+            <div className="col-head">
+              <div className="col-title">
+                {STATUS_OPTIONS.find((s) => s.value === status)?.label}
+              </div>
+              <div className="col-count">{grouped[status].length}</div>
+            </div>
+
+            <div className="col-body">
+              {grouped[status].length === 0 ? (
+                <div className="col-empty">No tasks</div>
+              ) : null}
+
+              {grouped[status].map((t) => (
+                <div className="task-card" key={t.id}>
+                  <div className="task-top">
+                    <div className="task-title" title={t.title}>
+                      {t.title}
+                    </div>
+
+                    <button
+                      className="icon-btn danger"
+                      title="Delete task"
+                      onClick={() => onDelete(t.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="task-actions">
+                    <select
+                      className="select"
+                      value={t.status}
+                      onChange={(e) => onChangeStatus(t.id, e.target.value)}
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
