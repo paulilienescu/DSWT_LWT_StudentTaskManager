@@ -1,6 +1,7 @@
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import TasksPage from "./TasksPage";
+import "./styles/Board.css";
 
 const PROJECTS = gql`
   query Projects {
@@ -28,11 +29,17 @@ const DELETE_PROJECT = gql`
 
 export default function ProjectsPage() {
   const [name, setName] = useState("");
-  const [selected, setSelected] = useState(null); // {id,name} or null
+  const [selectedId, setSelectedId] = useState(null);
 
   const { data, loading, error, refetch } = useQuery(PROJECTS);
   const [createProject] = useMutation(CREATE_PROJECT);
   const [deleteProject] = useMutation(DELETE_PROJECT);
+
+  const projects = data?.projects ?? [];
+
+  const selectedProject = useMemo(() => {
+    return projects.find((p) => p.id === selectedId) || null;
+  }, [projects, selectedId]);
 
   const onCreate = async (e) => {
     e.preventDefault();
@@ -45,47 +52,102 @@ export default function ProjectsPage() {
 
   const onDelete = async (id) => {
     await deleteProject({ variables: { id } });
-    if (selected?.id === id) setSelected(null);
+    if (selectedId === id) setSelectedId(null);
     refetch();
   };
 
-  if (selected) {
-    return <TasksPage project={selected} onBack={() => setSelected(null)} />;
-  }
-
-  if (loading) return <p>Loading projects...</p>;
-  if (error) return <p style={{ color: "red" }}>{error.message}</p>;
+  const onLogout = () => {
+    localStorage.removeItem("token");
+    window.location.reload();
+  };
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "Arial" }}>
-      <h2>Your Projects</h2>
+    <div className="board-bg">
+      <div className="board-shell">
+        {/* LEFT: Projects */}
+        <aside className="board-sidebar">
+          <div className="sidebar-header">
+            <div>
+              <h2 className="sidebar-title">Projects</h2>
+              <p className="sidebar-subtitle">Pick one to see tasks</p>
+            </div>
+          </div>
 
-      <form
-        onSubmit={onCreate}
-        style={{ display: "flex", gap: 8, marginBottom: 16 }}
-      >
-        <input
-          style={{ flex: 1 }}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="New project name"
-        />
-        <button type="submit">Add</button>
-      </form>
+          <form className="sidebar-form" onSubmit={onCreate}>
+            <input
+              className="input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="New project name"
+            />
+            <button className="btn btn-primary" type="submit">
+              Add
+            </button>
+          </form>
 
-      <ul>
-        {data.projects.map((p) => (
-          <li key={p.id} style={{ marginBottom: 10 }}>
-            <button onClick={() => setSelected(p)} style={{ marginRight: 8 }}>
-              Open
+          <div className="sidebar-list">
+            {loading ? <p className="muted">Loading projects...</p> : null}
+            {error ? <p className="errorText">{error.message}</p> : null}
+
+            {!loading && !error && projects.length === 0 ? (
+              <div className="empty">
+                <div className="empty-title">No projects yet</div>
+                <div className="empty-subtitle">
+                  Create one on the left and start adding tasks.
+                </div>
+              </div>
+            ) : null}
+
+            {projects.map((p) => {
+              const isActive = p.id === selectedId;
+              return (
+                <div
+                  key={p.id}
+                  className={`project-row ${isActive ? "active" : ""}`}
+                  onClick={() => setSelectedId(p.id)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="project-name" title={p.name}>
+                    {p.name}
+                  </div>
+
+                  <button
+                    className="icon-btn danger"
+                    title="Delete project"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(p.id);
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="sidebar-footer">
+            <button className="btn btn-ghost" onClick={onLogout}>
+              Logout
             </button>
-            <b>{p.name}</b>{" "}
-            <button onClick={() => onDelete(p.id)} style={{ marginLeft: 8 }}>
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+          </div>
+        </aside>
+
+        {/* RIGHT: Tasks */}
+        <main className="board-main">
+          {!selectedProject ? (
+            <div className="main-empty">
+              <div className="main-empty-title">Select a project</div>
+              <div className="main-empty-subtitle">
+                Your tasks will show here.
+              </div>
+            </div>
+          ) : (
+            <TasksPage project={selectedProject} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
