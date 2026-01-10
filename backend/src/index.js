@@ -1,60 +1,8 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
 
-// Mock "database" in memory
-const users = []; // { id, username, password }
-
-const typeDefs = `#graphql
-  type User {
-    id: ID!
-    username: String!
-  }
-
-  type Query {
-    hello: String
-     me: User
-  }
-
-  type Mutation {
-    register(username: String!, password: String!): String!
-    login(username: String!, password: String!): String!
-  }
-`;
-
-const resolvers = {
-  Query: {
-    hello: () => "Hello World!",
-    me: (_, __, ctx) => ctx.user,
-  },
-
-  Mutation: {
-    register: (_, { username, password }) => {
-      if (!username.trim()) throw new Error("Username is required");
-      if (password.length < 6)
-        throw new Error("Password must be at least 6 characters");
-
-      const exists = users.some((u) => u.username === username);
-      if (exists) throw new Error("Username already exists");
-
-      const newUser = {
-        id: String(users.length + 1),
-        username,
-        password,
-      };
-      users.push(newUser);
-
-      return `token-${newUser.id}`;
-    },
-
-    login: (_, { username, password }) => {
-      const user = users.find((u) => u.username === username);
-      if (!user) throw new Error("Invalid credentials");
-      if (user.password !== password) throw new Error("Invalid credentials");
-
-      return `token-${user.id}`;
-    },
-  },
-};
+import { typeDefs } from "./schema/typeDefs.js";
+import { resolvers, users } from "./schema/resolvers.js";
 
 const server = new ApolloServer({ typeDefs, resolvers });
 
