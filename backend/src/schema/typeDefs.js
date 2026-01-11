@@ -26,7 +26,7 @@ export const typeDefs = `#graphql
   type Query {
     me: User
     projects: [Project!]!
-    tasks(projectId: ID!, status: TaskStatus): [Task!]!
+    tasks(projectId: ID!, status: TaskStatus, limit: Int, offset: Int): [Task!]!
   }
 
   type Mutation {
