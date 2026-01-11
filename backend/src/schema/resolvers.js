@@ -12,7 +12,7 @@ export const resolvers = {
       return projects.filter((p) => p.ownerId === ctx.user.id);
     },
 
-    tasks: (_, { projectId, status }, ctx) => {
+    tasks: (_, { projectId, status, limit, offset }, ctx) => {
       if (!ctx.user) throw new Error("Not authenticated");
 
       const project = projects.find(
@@ -24,6 +24,11 @@ export const resolvers = {
       if (status) {
         projectTasks = projectTasks.filter((t) => t.status === status);
       }
+      
+      if (offset !== undefined && limit !== undefined) {
+        projectTasks = projectTasks.slice(offset, offset + limit);
+      }
+
       return projectTasks;
     },
   },
