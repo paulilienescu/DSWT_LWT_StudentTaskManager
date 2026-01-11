@@ -3,6 +3,10 @@ const users = []; // { id, username, password }
 const projects = []; // { id, name, ownerId }
 const tasks = []; // { id, title, status, projectId }
 
+// test users
+users.push({ id: "1", username: "paul@gmail.com", password: "123123" });
+users.push({ id: "2", username: "andreea@yahoo.com", password: "123123" });
+
 export const resolvers = {
   Query: {
     me: (_, __, ctx) => ctx.user,
