@@ -12,6 +12,15 @@ const PROJECTS = gql`
   }
 `;
 
+const ME = gql`
+  query Me {
+    me {
+      id
+      username
+    }
+  }
+`;
+
 const CREATE_PROJECT = gql`
   mutation CreateProject($name: String!) {
     createProject(name: $name) {
@@ -32,6 +41,9 @@ export default function ProjectsPage() {
   const [selectedId, setSelectedId] = useState(null);
 
   const { data, loading, error, refetch } = useQuery(PROJECTS);
+  const { data: meData } = useQuery(ME);
+  const username = meData?.me?.username ?? "";
+
   const [createProject] = useMutation(CREATE_PROJECT);
   const [deleteProject] = useMutation(DELETE_PROJECT);
 
@@ -69,7 +81,11 @@ export default function ProjectsPage() {
           <div className="sidebar-header">
             <div>
               <h2 className="sidebar-title">Projects</h2>
-              <p className="sidebar-subtitle">Pick one to see tasks</p>
+              {username ? (
+                <div className="sidebar-greeting">Hello, {username}</div>
+              ) : (
+                <p className="sidebar-subtitle">Pick one to see tasks</p>
+              )}
             </div>
           </div>
 
